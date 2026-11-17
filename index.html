@@ -5,33 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#090b0f">
   <title>KIO.AI — AI Co-Pilot</title>
-  <link rel="stylesheet" href="/styles.css">
-<style>
-/* KIO responsive UX refinement */
-.hero{padding:clamp(34px,7vh,78px) clamp(16px,3vw,30px) 24px;overflow:visible}
-.hero h1{max-width:760px;margin:0 auto;font-size:clamp(26px,2.55vw,40px);line-height:1.24;letter-spacing:-1.1px;text-wrap:balance;overflow-wrap:normal;word-break:normal}
-.hero h1 em{display:inline;color:var(--cyan)}
-.hero p{max-width:460px;margin:16px auto 0;line-height:1.65}
-.quick-links{gap:8px;padding:0 16px 14px}
-.quick-links button{min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;border-radius:6px;white-space:nowrap}
-.quick-links button span{font-size:11px}
-.top-actions .icon-btn,.rail-btn{position:relative}
-[data-tooltip]::after{content:attr(data-tooltip);position:absolute;left:calc(100% + 9px);top:50%;transform:translateY(-50%);z-index:20;padding:6px 8px;background:#20252d;border:1px solid #3a414c;color:#f2f4f7;font-size:10px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
-[data-tooltip]:hover::after,[data-tooltip]:focus-visible::after{opacity:1}
-.tree{margin-left:10px;border-left:1px solid #242a33;padding-left:8px}
-.tree.nested{margin-left:14px}
-.tree-row{width:100%;height:32px;min-height:32px;gap:8px;padding:0 7px;border:0;border-radius:3px;background:transparent;text-align:left;font-size:12px;cursor:pointer}
-.tree-row[role=treeitem]:focus-visible{outline:1px solid var(--cyan);outline-offset:-1px}
-.tree-row:hover{background:#1a2028}
-.tree-row.file.selected{background:#17302c;color:#eafffb}
-.tree-row[hidden],[data-tree-children][hidden]{display:none!important}
-.folder-row .chevron{font-size:14px}
-.file-icon{font-weight:700;font-style:normal}
-.explorer{overflow:auto}
-@media(max-width:1050px) and (min-width:761px){.workspace{grid-template-columns:52px 220px minmax(0,1fr)}.ai-panel{display:block}.copilot-panel{display:none}.hero{padding-top:clamp(28px,6vh,60px)}.hero h1{font-size:clamp(27px,3.5vw,38px)}}
-@media(max-width:760px){.workspace{overflow:hidden}.ai-panel{height:100%;overflow-y:auto;padding-bottom:28px}.panel-header{position:sticky;top:0;z-index:4;background:#101217}.hero{padding:clamp(28px,6vh,54px) 18px 22px}.hero h1{max-width:560px;font-size:clamp(27px,7.2vw,34px);line-height:1.22;letter-spacing:-.8px}.hero-break{display:block}.hero p{font-size:13px;margin-top:14px}.quick-links{justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;padding:0 12px 14px;scrollbar-width:thin}.quick-links button{flex:0 0 auto}.chat-card{margin:0 12px}.chat-tabs{gap:12px;overflow-x:auto;white-space:nowrap}.models{overflow-x:auto}.models button{flex:0 0 auto}.tasks{margin:12px}.task{min-width:0;line-height:1.4;padding:9px 10px}.explorer.mobile-open{display:block;position:fixed;z-index:12;left:0;top:55px;bottom:0;width:min(82vw,310px);margin:0;background:#101217;border:1px solid var(--line);box-shadow:18px 0 48px #000b}.explorer.mobile-open~.copilot-panel{display:none}}
-@media(max-width:380px){.hero h1{font-size:26px}.quick-links button{padding:8px 10px}.quick-links button span{font-size:10px}.chat-tabs{gap:8px;padding:0 10px}.chat-tabs button{font-size:11px}}
-</style>
+  <link rel="stylesheet" href="./styles.css">
+
 
 </head>
 
@@ -256,6 +231,6 @@
 
 </div>
 
-<script src="/app.js"></script>
+<script src="./app.js"></script>
 </body>
         </html>
