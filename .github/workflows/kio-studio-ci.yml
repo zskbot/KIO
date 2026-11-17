@@ -1,0 +1,34 @@
+name: KIO Studio CI
+on:
+  pull_request:
+    paths:
+      - "studio/**"
+      - ".github/workflows/kio-studio-ci.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kio-studio-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: studio
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/kio
+      KIO_AUTH_SECRET: ci-only-secret-value-with-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: TypeScript check
+        run: npm run lint
+      - name: Production build
+        run: npm run build
