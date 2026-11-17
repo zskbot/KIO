@@ -22,7 +22,7 @@
 .tree.nested{margin-left:14px}
 .tree-row{width:100%;height:32px;min-height:32px;gap:8px;padding:0 7px;border:0;border-radius:3px;background:transparent;text-align:left;font-size:12px;cursor:pointer}
 .tree-row[role=treeitem]:focus-visible{outline:1px solid var(--cyan);outline-offset:-1px}
-.tree-row:hover{background:#1a2028}
+.tree-row:hover{background:#1a2028}\n.tree-row.file.selected{background:#17302c;color:#eafffb}
 .tree-row[hidden],[data-tree-children][hidden]{display:none!important}
 .folder-row .chevron{font-size:14px}
 .file-icon{font-weight:700;font-style:normal}
@@ -65,7 +65,7 @@
       <button class="avatar" title="KIO account" aria-label="Tài khoản KIO">K</button>
     </div>
 
-    <button class="mobile-menu" id="mobileMenu">☰</button>
+    <button class="mobile-menu" id="mobileMenu" aria-label="Mở trình khám phá" aria-expanded="false">☰</button>
   </header>
 
   <!-- MAIN -->
