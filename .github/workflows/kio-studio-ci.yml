@@ -16,6 +16,9 @@ jobs:
     defaults:
       run:
         working-directory: studio
+    env:
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/kio
+      KIO_AUTH_SECRET: ci-only-secret-value-with-at-least-32-characters
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +32,3 @@ jobs:
         run: npm run lint
       - name: Production build
         run: npm run build
-        env:
-          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/kio
-          KIO_AUTH_SECRET: ci-only-secret-value-with-at-least-32-characters
