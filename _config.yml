@@ -1,0 +1,12 @@
+title: KIO.AI
+description: KIO.AI — AI-powered design and development workspace.
+markdown: kramdown
+exclude:
+  - studio
+  - node_modules
+  - vendor
+  - package.json
+  - server.js
+  - README.md
+  - Gemfile
+  - Gemfile.lock
