@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download, FilePlus2, FileText, FolderKanban, Package, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, FilePlus2, FileText, FolderKanban, Package, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 
 type Project = { id: string; name: string; slug: string; description: string; _count: { files: number; artifacts: number } };
 type ProjectFile = { id: string; path: string; size: number; updatedAt: string };
@@ -30,6 +30,9 @@ export default function ProjectsPage() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   async function loadProjects() {
     const response = await fetch("/api/projects", { cache: "no-store" });
@@ -232,6 +235,22 @@ export default function ProjectsPage() {
     finally { setBusy(false); }
   }
 
+  async function openPreview() {
+    if (!selected) return;
+    setPreviewLoading(true); setNotice("");
+    try {
+      const response = await fetch("/api/projects/" + selected + "/preview", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not start project preview.");
+      setPreviewHtml(data.html);
+      setPreviewOpen(true);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Preview failed.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
   async function packProject() {
     if (!selected) return;
     setBusy(true); setNotice(""); setArtifact(null);
@@ -247,6 +266,12 @@ export default function ProjectsPage() {
   const activeProject = projects.find((project) => project.id === selected);
   const activeTab = tabs.find((tab) => tab.key === activeTabKey);
   return <main className="shell" style={{ minHeight: "100vh" }}>
+    {previewOpen ? <div role="dialog" aria-modal="true" aria-label="Isolated project preview" className="kio-preview-overlay">
+      <div className="kio-preview-window">
+        <div className="kio-preview-header"><div><b>Isolated Preview Runtime</b><small>Project HTML · sandboxed iframe · network access blocked</small></div><button type="button" className="button button-outline" onClick={() => setPreviewOpen(false)}>Close</button></div>
+        <iframe title="Project preview" sandbox="allow-scripts" srcDoc={previewHtml} referrerPolicy="no-referrer" className="kio-preview-frame"/>
+      </div>
+    </div> : null}
     <header className="topbar"><Link href="/" className="brand"><span className="brand-symbol"><i/><i/></span><span>KIO<span className="brand-dot">.AI</span></span></Link><div className="crumb"><span>Workspace</span><span className="slash">/</span><strong>Projects & Full-packer</strong></div><div className="top-actions"><Link href="/" className="button button-outline"><ArrowLeft size={14}/>Workspace</Link></div></header>
     <section className="main-panel" style={{ maxWidth: 1120 }}>
       <div className="page-heading"><div><div className="eyebrow">KIO PLATFORM / FULL-PACKER</div><h1>Projects <span>& packages.</span></h1><p>Create projects, browse source files, edit text and produce downloadable ZIP artifacts.</p></div><button className="button button-outline" onClick={() => { loadProjects().then(() => selected && loadFiles(selected)).catch(e => setNotice(e.message)); }}><RefreshCw size={14}/>Refresh</button></div>
@@ -273,7 +298,7 @@ export default function ProjectsPage() {
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 22 }}>
             <div className="card-title"><FileText size={16}/><b>Source files</b></div>
-            <button type="button" className="button button-outline" onClick={newFile} disabled={!selected || busy}><FilePlus2 size={14}/>New file</button>
+            <div className="kio-file-actions"><button type="button" className="button button-outline" onClick={openPreview} disabled={!selected || previewLoading}><Eye size={14}/>{previewLoading ? "Loading…" : "Preview"}</button><button type="button" className="button button-outline" onClick={newFile} disabled={!selected || busy}><FilePlus2 size={14}/>New file</button></div>
           </div>
           <div style={{ border: "1px solid var(--line)", marginTop: 10, maxHeight: 210, overflowY: "auto" }}>
             {loadingFiles ? <p style={{ padding: 12, color: "var(--muted)" }}>Loading files…</p> : files.length ? files.map(file => <button key={file.id} type="button" onClick={() => openFile(file.path)} disabled={busy} style={{ display: "flex", width: "100%", justifyContent: "space-between", gap: 12, textAlign: "left", padding: "10px 12px", border: 0, borderBottom: "1px solid var(--line)", background: tabs.some((tab) => tab.path === file.path) ? "#151b24" : "transparent", color: "var(--text)", cursor: "pointer" }}><span style={{ overflowWrap: "anywhere" }}>{file.path}</span><small style={{ color: "var(--muted)", flexShrink: 0 }}>{(file.size / 1024).toFixed(1)} KB</small></button>) : <p style={{ padding: 12, color: "var(--muted)" }}>No files yet. Create your first source file below.</p>}
