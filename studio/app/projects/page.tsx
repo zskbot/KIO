@@ -188,6 +188,35 @@ export default function ProjectsPage() {
     finally { setBusy(false); }
   }
 
+  async function renameFile() {
+    if (!selected || !activeTab || activeTab.isNew || !activeTab.originalPath || !activeTab.path.trim()) return;
+    const nextPath = activeTab.path.trim();
+    if (nextPath === activeTab.originalPath) return;
+    if (tabs.some((tab) => tab.key !== activeTab.key && tab.path === nextPath)) {
+      setNotice("A tab is already open for that destination path.");
+      return;
+    }
+    setBusy(true); setNotice("");
+    try {
+      const response = await fetch("/api/projects/" + selected + "/files", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromPath: activeTab.originalPath, toPath: nextPath }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not rename file.");
+      const renamed = { ...activeTab, key: data.file.path, path: data.file.path, originalPath: data.file.path, dirty: activeTab.dirty, saveState: activeTab.dirty ? "idle" as const : "saved" as const };
+      setTabs((current) => current.map((tab) => tab.key === activeTab.key ? renamed : tab));
+      setActiveTabKey(renamed.key);
+      await loadFiles(selected);
+      setNotice("Renamed to " + data.file.path + ".");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "File rename failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function deleteFile() {
     if (!selected || !activeTab?.path || activeTab.isNew) return;
     if (!window.confirm("Delete " + activeTab.path + "? This cannot be undone.")) return;
@@ -221,7 +250,7 @@ export default function ProjectsPage() {
     <header className="topbar"><Link href="/" className="brand"><span className="brand-symbol"><i/><i/></span><span>KIO<span className="brand-dot">.AI</span></span></Link><div className="crumb"><span>Workspace</span><span className="slash">/</span><strong>Projects & Full-packer</strong></div><div className="top-actions"><Link href="/" className="button button-outline"><ArrowLeft size={14}/>Workspace</Link></div></header>
     <section className="main-panel" style={{ maxWidth: 1120 }}>
       <div className="page-heading"><div><div className="eyebrow">KIO PLATFORM / FULL-PACKER</div><h1>Projects <span>& packages.</span></h1><p>Create projects, browse source files, edit text and produce downloadable ZIP artifacts.</p></div><button className="button button-outline" onClick={() => { loadProjects().then(() => selected && loadFiles(selected)).catch(e => setNotice(e.message)); }}><RefreshCw size={14}/>Refresh</button></div>
-      <div className="content-grid" style={{ gridTemplateColumns: "minmax(0,1.25fr) minmax(260px,.75fr)", alignItems: "start" }}>
+      <div className="content-grid kio-project-grid" style={{ alignItems: "start" }}>
         <section className="copilot-card" style={{ minHeight: 0, padding: 20 }}>
           <div className="card-title"><FolderKanban size={18}/><div><b>Project workspace</b><small>Private to your account</small></div></div>
           <form onSubmit={createProject} style={{ display: "flex", gap: 8, margin: "20px 0" }}>
@@ -250,7 +279,7 @@ export default function ProjectsPage() {
             {loadingFiles ? <p style={{ padding: 12, color: "var(--muted)" }}>Loading files…</p> : files.length ? files.map(file => <button key={file.id} type="button" onClick={() => openFile(file.path)} disabled={busy} style={{ display: "flex", width: "100%", justifyContent: "space-between", gap: 12, textAlign: "left", padding: "10px 12px", border: 0, borderBottom: "1px solid var(--line)", background: tabs.some((tab) => tab.path === file.path) ? "#151b24" : "transparent", color: "var(--text)", cursor: "pointer" }}><span style={{ overflowWrap: "anywhere" }}>{file.path}</span><small style={{ color: "var(--muted)", flexShrink: 0 }}>{(file.size / 1024).toFixed(1)} KB</small></button>) : <p style={{ padding: 12, color: "var(--muted)" }}>No files yet. Create your first source file below.</p>}
           </div>
 
-          <div role="tablist" aria-label="Open source files" style={{ display: "flex", gap: 4, overflowX: "auto", marginTop: 16, borderBottom: "1px solid var(--line)" }}>
+          <div className="kio-source-tabs" role="tablist" aria-label="Open source files" style={{ display: "flex", gap: 4, overflowX: "auto", marginTop: 16, borderBottom: "1px solid var(--line)" }}>
             {tabs.map((tab) => <div key={tab.key} style={{ display: "flex", alignItems: "center", border: "1px solid var(--line)", borderBottom: activeTabKey === tab.key ? "2px solid var(--cyan)" : "1px solid var(--line)", background: activeTabKey === tab.key ? "#151b24" : "transparent" }}>
               <button type="button" role="tab" aria-selected={activeTabKey === tab.key} onClick={() => setActiveTabKey(tab.key)} style={{ padding: "8px 10px", border: 0, background: "transparent", color: "var(--text)", whiteSpace: "nowrap" }}>{tab.path || "Untitled"}{tab.dirty ? " •" : ""}</button>
               <button type="button" aria-label={"Close " + (tab.path || "new file")} onClick={() => closeTab(tab)} style={{ border: 0, background: "transparent", color: "var(--muted)", padding: "6px 8px" }}>×</button>
@@ -259,10 +288,13 @@ export default function ProjectsPage() {
           <form onSubmit={saveFile} style={{ marginTop: 18, display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
               <div className="card-title"><FilePlus2 size={16}/><b>{activeTab?.isNew || !activeTab?.path ? "Create source file" : "Edit source file"}</b><small>{activeTab?.saveState === "saving" ? "Autosaving…" : activeTab?.saveState === "saved" && !activeTab?.dirty ? "Saved" : activeTab?.saveState === "error" ? "Autosave failed" : activeTab?.dirty && activeTab.path !== activeTab.originalPath ? "Path changed · manual save required" : activeTab?.dirty ? "Unsaved changes" : ""}</small></div>
-              {activeTab?.path && !activeTab.isNew ? <button type="button" className="button button-outline" onClick={deleteFile} disabled={busy} style={{ color: "#ff8585" }}><Trash2 size={13}/>Delete</button> : null}
+              {activeTab?.path && !activeTab.isNew ? <div className="kio-file-actions">
+                  {activeTab.path !== activeTab.originalPath ? <button type="button" className="button button-outline" onClick={renameFile} disabled={busy}><Save size={13}/>Rename file</button> : null}
+                  <button type="button" className="button button-outline" onClick={deleteFile} disabled={busy} style={{ color: "#ff8585" }}><Trash2 size={13}/>Delete</button>
+                </div> : null}
             </div>
             <input aria-label="File path" value={activeTab?.path ?? ""} onChange={e => updateActiveTab({ path: e.target.value, dirty: true, saveState: "idle" })} placeholder="src/index.js" required maxLength={240} style={fieldStyle} disabled={!activeTab}/>
-            <textarea aria-label="File contents" value={activeTab?.content ?? ""} onChange={e => updateActiveTab({ content: e.target.value, dirty: true, saveState: "idle" })} rows={12} style={{ ...fieldStyle, resize: "vertical", fontFamily: "monospace", lineHeight: 1.6 }} disabled={!activeTab}/>
+            <textarea className="kio-source-editor" aria-label="File contents" value={activeTab?.content ?? ""} onChange={e => updateActiveTab({ content: e.target.value, dirty: true, saveState: "idle" })} rows={12} style={{ ...fieldStyle, resize: "vertical", fontFamily: "monospace", lineHeight: 1.6 }} disabled={!activeTab}/>
             <button className="button button-light" disabled={busy || !selected || !activeTab || !activeTab.path.trim()}><Save size={14}/>{busy ? "Working…" : "Save file"}</button>
           </form>
         </section>
