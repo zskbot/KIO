@@ -28,6 +28,8 @@ export default function ProjectsPage() {
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   async function loadProjects() {
     const response = await fetch("/api/projects", { cache: "no-store" });
@@ -60,6 +62,35 @@ export default function ProjectsPage() {
     loadFiles(selected).catch((error) => setNotice(error.message));
   }, [selected]);
 
+  useEffect(() => {
+    if (!selected || !activePath || !isDirty || !path.trim()) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSaveState("saving");
+      try {
+        const response = await fetch("/api/projects/" + selected + "/files", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, content }),
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Autosave failed.");
+        setIsDirty(false);
+        setSaveState("saved");
+        setFiles((current) => current.map((file) => file.path === path
+          ? { ...file, size: data.file.size, updatedAt: data.file.updatedAt }
+          : file));
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setSaveState("error");
+          setNotice(error instanceof Error ? error.message : "Autosave failed.");
+        }
+      }
+    }, 1200);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [selected, activePath, path, content, isDirty]);
+
   async function openFile(filePath: string) {
     if (!selected) return;
     setBusy(true);
@@ -71,6 +102,8 @@ export default function ProjectsPage() {
       setActivePath(data.file.path);
       setPath(data.file.path);
       setContent(data.file.content);
+      setIsDirty(false);
+      setSaveState("saved");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not open file.");
     } finally {
@@ -93,6 +126,8 @@ export default function ProjectsPage() {
     setActivePath("");
     setPath("");
     setContent("");
+    setIsDirty(false);
+    setSaveState("idle");
     setNotice("New file: enter a path and save.");
   }
 
@@ -109,6 +144,8 @@ export default function ProjectsPage() {
       if (!response.ok) throw new Error(data.error || "Could not save file.");
       setActivePath(data.file.path);
       setPath(data.file.path);
+      setIsDirty(false);
+      setSaveState("saved");
       await Promise.all([loadProjects(), loadFiles(selected)]);
       setNotice("Saved " + data.file.path + ".");
     } catch (error) { setNotice(error instanceof Error ? error.message : "File save failed."); }
@@ -123,7 +160,7 @@ export default function ProjectsPage() {
       const response = await fetch("/api/projects/" + selected + "/files?path=" + encodeURIComponent(activePath), { method: "DELETE" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not delete file.");
-      setActivePath(""); setPath(""); setContent("");
+      setActivePath(""); setPath(""); setContent(""); setIsDirty(false); setSaveState("idle");
       await Promise.all([loadProjects(), loadFiles(selected)]);
       setNotice("Deleted " + data.path + ".");
     } catch (error) { setNotice(error instanceof Error ? error.message : "File deletion failed."); }
@@ -170,11 +207,11 @@ export default function ProjectsPage() {
 
           <form onSubmit={saveFile} style={{ marginTop: 18, display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <div className="card-title"><FilePlus2 size={16}/><b>{activePath ? "Edit source file" : "Create source file"}</b></div>
+              <div className="card-title"><FilePlus2 size={16}/><b>{activePath ? "Edit source file" : "Create source file"}</b><small>{saveState === "saving" ? "Autosaving…" : saveState === "saved" && !isDirty ? "Saved" : saveState === "error" ? "Autosave failed" : isDirty ? "Unsaved changes" : ""}</small></div>
               {activePath ? <button type="button" className="button button-outline" onClick={deleteFile} disabled={busy} style={{ color: "#ff8585" }}><Trash2 size={13}/>Delete</button> : null}
             </div>
             <input aria-label="File path" value={path} onChange={e => setPath(e.target.value)} placeholder="src/index.js" required maxLength={240} style={fieldStyle}/>
-            <textarea aria-label="File contents" value={content} onChange={e => setContent(e.target.value)} rows={12} style={{ ...fieldStyle, resize: "vertical", fontFamily: "monospace", lineHeight: 1.6 }}/>
+            <textarea aria-label="File contents" value={content} onChange={e => { setContent(e.target.value); setIsDirty(true); setSaveState("idle"); }} rows={12} style={{ ...fieldStyle, resize: "vertical", fontFamily: "monospace", lineHeight: 1.6 }}/>
             <button className="button button-light" disabled={busy || !selected || !path.trim()}><Save size={14}/>{busy ? "Working…" : "Save file"}</button>
           </form>
         </section>
