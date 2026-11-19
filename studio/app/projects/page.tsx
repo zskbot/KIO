@@ -59,7 +59,7 @@ export default function ProjectsPage() {
     setProjectDescription(project?.description ?? "");
   }, [selected, projects]);
   useEffect(() => {
-    if (!selected) { setFiles([]); setActivePath(""); return; }
+    if (!selected) { setFiles([]); setTabs([]); setActiveTabKey(""); return; }
     loadFiles(selected).catch((error) => setNotice(error.message));
   }, [selected]);
 
