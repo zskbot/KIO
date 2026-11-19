@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         data: { usedAt: now },
       });
       if (consumed.count !== 1) throw new Error("TOKEN_ALREADY_USED");
-      await tx.user.update({ where: { id: token.userId }, data: { passwordHash } });
+      await tx.user.update({ where: { id: token.userId }, data: { passwordHash, sessionVersion: { increment: 1 } } });
       await tx.passwordResetToken.updateMany({
         where: { userId: token.userId, id: { not: token.id }, usedAt: null },
         data: { usedAt: now },
