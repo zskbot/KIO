@@ -21,7 +21,7 @@ export default function RegisterPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Registration failed.");
-      window.location.href = "/verify-email";
+      window.location.href = data.verificationEmailSent ? "/verify-email" : "/verify-email?delivery=unavailable";
     } catch (error) {
       setError(error instanceof Error ? error.message : "Registration failed.");
     } finally {
