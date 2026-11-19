@@ -4,6 +4,11 @@ on:
     paths:
       - "studio/**"
       - ".github/workflows/kio-studio-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "studio/**"
+      - ".github/workflows/kio-studio-ci.yml"
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +31,7 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Generate Prisma client
         run: npx prisma generate
       - name: TypeScript check
