@@ -7,7 +7,7 @@ import { ArrowLeft, Download, FilePlus2, FileText, FolderKanban, Package, Plus, 
 type Project = { id: string; name: string; slug: string; description: string; _count: { files: number; artifacts: number } };
 type ProjectFile = { id: string; path: string; size: number; updatedAt: string };
 type Artifact = { id: string; filename: string; size: number; checksum: string; downloadUrl: string };
-type EditorTab = { key: string; path: string; content: string; dirty: boolean; saveState: "idle" | "saving" | "saved" | "error"; isNew: boolean };
+type EditorTab = { key: string; path: string; originalPath: string; content: string; dirty: boolean; saveState: "idle" | "saving" | "saved" | "error"; isNew: boolean };
 
 const fieldStyle = {
   padding: 11,
@@ -66,11 +66,10 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (!selected) return;
     const controllers: AbortController[] = [];
-    const timers = tabs.filter((tab) => !tab.isNew && tab.dirty && tab.path).map((tab) => {
+    const timers = tabs.filter((tab) => !tab.isNew && tab.dirty && tab.path && tab.path === tab.originalPath).map((tab) => {
       const controller = new AbortController();
       controllers.push(controller);
       return window.setTimeout(async () => {
-        setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, saveState: "saving" } : item));
         try {
           const response = await fetch("/api/projects/" + selected + "/files", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -82,7 +81,7 @@ export default function ProjectsPage() {
           setFiles((current) => current.map((file) => file.path === tab.path ? { ...file, size: data.file.size, updatedAt: data.file.updatedAt } : file));
         } catch (error) {
           if (!controller.signal.aborted) {
-            setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, saveState: "error" } : item));
+            setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, dirty: false, saveState: "error" } : item));
             setNotice(error instanceof Error ? error.message : "Autosave failed.");
           }
         }
@@ -100,8 +99,8 @@ export default function ProjectsPage() {
       const response = await fetch("/api/projects/" + selected + "/files?path=" + encodeURIComponent(filePath), { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not open file.");
-      const tab: EditorTab = { key: data.file.path, path: data.file.path, content: data.file.content, dirty: false, saveState: "saved", isNew: false };
-      setTabs((current) => [...current.filter((item) => !item.isNew), tab]);
+      const tab: EditorTab = { key: data.file.path, path: data.file.path, originalPath: data.file.path, content: data.file.content, dirty: false, saveState: "saved", isNew: false };
+      setTabs((current) => [...current, tab]);
       setActiveTabKey(tab.key);
     } catch (error) { setNotice(error instanceof Error ? error.message : "Could not open file."); }
     finally { setBusy(false); }
@@ -145,7 +144,7 @@ export default function ProjectsPage() {
   function newFile() {
     const draft = tabs.find((tab) => tab.isNew);
     if (draft) { setActiveTabKey(draft.key); return; }
-    const tab: EditorTab = { key: "new-file-" + Date.now(), path: "", content: "", dirty: false, saveState: "idle", isNew: true };
+    const tab: EditorTab = { key: "new-file-" + Date.now(), path: "", originalPath: "", content: "", dirty: false, saveState: "idle", isNew: true };
     setTabs((current) => [...current, tab]); setActiveTabKey(tab.key);
     setNotice("New file: enter a path and save.");
   }
@@ -172,7 +171,7 @@ export default function ProjectsPage() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not save file.");
-      const saved: EditorTab = { ...activeTab, key: data.file.path, path: data.file.path, dirty: false, saveState: "saved", isNew: false };
+      const saved: EditorTab = { ...activeTab, key: data.file.path, path: data.file.path, originalPath: data.file.path, dirty: false, saveState: "saved", isNew: false };
       setTabs((current) => current.map((tab) => tab.key === activeTab.key ? saved : tab));
       setActiveTabKey(saved.key);
       await Promise.all([loadProjects(), loadFiles(selected)]);
@@ -251,7 +250,7 @@ export default function ProjectsPage() {
           </div>
           <form onSubmit={saveFile} style={{ marginTop: 18, display: "grid", gap: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <div className="card-title"><FilePlus2 size={16}/><b>{activeTab?.isNew || !activeTab?.path ? "Create source file" : "Edit source file"}</b><small>{activeTab?.saveState === "saving" ? "Autosaving…" : activeTab?.saveState === "saved" && !activeTab?.dirty ? "Saved" : activeTab?.saveState === "error" ? "Autosave failed" : activeTab?.dirty ? "Unsaved changes" : ""}</small></div>
+              <div className="card-title"><FilePlus2 size={16}/><b>{activeTab?.isNew || !activeTab?.path ? "Create source file" : "Edit source file"}</b><small>{activeTab?.saveState === "saving" ? "Autosaving…" : activeTab?.saveState === "saved" && !activeTab?.dirty ? "Saved" : activeTab?.saveState === "error" ? "Autosave failed" : activeTab?.dirty && activeTab.path !== activeTab.originalPath ? "Path changed · manual save required" : activeTab?.dirty ? "Unsaved changes" : ""}</small></div>
               {activeTab?.path && !activeTab.isNew ? <button type="button" className="button button-outline" onClick={deleteFile} disabled={busy} style={{ color: "#ff8585" }}><Trash2 size={13}/>Delete</button> : null}
             </div>
             <input aria-label="File path" value={activeTab?.path ?? ""} onChange={e => updateActiveTab({ path: e.target.value, dirty: true, saveState: "idle" })} placeholder="src/index.js" required maxLength={240} style={fieldStyle} disabled={!activeTab}/>
