@@ -6,14 +6,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  passwordHash  String
-  createdAt     DateTime       @default(now())
-  conversations Conversation[]
-  tasks         Task[]
-  projects      Project[]
+  id                    String                  @id @default(cuid())
+  name                  String
+  email                 String                  @unique
+  passwordHash          String
+  emailVerifiedAt       DateTime?
+  createdAt             DateTime                @default(now())
+  conversations         Conversation[]
+  tasks                 Task[]
+  projects              Project[]
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens   PasswordResetToken[]
 }
 model Conversation {
   id        String    @id @default(cuid())
@@ -82,4 +85,31 @@ model Artifact {
   projectId String
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   @@index([projectId, createdAt])
+}
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, expiresAt])
+}
+model RateLimitBucket {
+  key       String   @id
+  count     Int      @default(0)
+  resetAt   DateTime
+  updatedAt DateTime @updatedAt
+  @@index([resetAt])
 }
