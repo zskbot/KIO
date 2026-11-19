@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 
 export async function consumeRateLimit(key: string, limit: number, windowMs: number) {
@@ -20,4 +21,23 @@ export async function consumeRateLimit(key: string, limit: number, windowMs: num
     return bucket.count;
   });
   return { allowed: result <= limit, remaining: Math.max(0, limit - result) };
+}
+
+/** Hash identities before persisting rate-limit keys so emails and IP addresses are not stored. */
+export async function consumeIdentityRateLimit(
+  scope: string,
+  identity: string,
+  limit: number,
+  windowMs: number,
+) {
+  const secret = process.env.KIO_AUTH_SECRET;
+  if (!secret || secret.length < 32) throw new Error("KIO_AUTH_SECRET is not configured.");
+  const digest = createHmac("sha256", secret).update(scope + ":" + identity).digest("hex");
+  return consumeRateLimit("identity:" + digest, limit, windowMs);
+}
+
+export function getClientRateLimitIdentity(request: Request) {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  return (forwarded || realIp || "unknown").slice(0, 128);
 }
