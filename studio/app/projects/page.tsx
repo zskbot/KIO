@@ -22,6 +22,8 @@ export default function ProjectsPage() {
   const [files, setFiles] = useState<ProjectFile[]>([]);
   const [activePath, setActivePath] = useState("");
   const [name, setName] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
   const [path, setPath] = useState("README.md");
   const [content, setContent] = useState("# My KIO project\n\nCreated with KIO.AI Studio.\n");
   const [artifact, setArtifact] = useState<Artifact | null>(null);
@@ -57,6 +59,11 @@ export default function ProjectsPage() {
   }
 
   useEffect(() => { loadProjects().catch((error) => setNotice(error.message)); }, []);
+  useEffect(() => {
+    const project = projects.find((item) => item.id === selected);
+    setProjectName(project?.name ?? "");
+    setProjectDescription(project?.description ?? "");
+  }, [selected, projects]);
   useEffect(() => {
     if (!selected) { setFiles([]); setActivePath(""); return; }
     loadFiles(selected).catch((error) => setNotice(error.message));
@@ -120,6 +127,30 @@ export default function ProjectsPage() {
       setName(""); setSelected(data.project.id); await loadProjects(); setNotice("Project created.");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Project creation failed."); }
     finally { setBusy(false); }
+  }
+
+  async function saveProjectSettings(event: FormEvent) {
+    event.preventDefault();
+    if (!selected) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/projects/" + selected, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: projectName, description: projectDescription }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not update project.");
+      setProjects((current) => current.map((project) => project.id === selected
+        ? { ...project, name: data.project.name, description: data.project.description }
+        : project));
+      setNotice("Project settings saved.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Project settings update failed.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function newFile() {
@@ -195,7 +226,15 @@ export default function ProjectsPage() {
           <select id="project-select" value={selected} onChange={e => { setSelected(e.target.value); setArtifact(null); }} style={{ ...fieldStyle, display: "block", width: "100%", margin: "8px 0 20px" }}>
             <option value="">Choose a project</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name} · {project._count.files} files</option>)}
           </select>
-          {activeProject ? <div className="metric-card"><strong>{activeProject.name}</strong><small>/{activeProject.slug} · {activeProject._count.files} source files · {activeProject._count.artifacts} packages</small></div> : <p style={{ color: "var(--muted)" }}>Create a project to begin.</p>}
+          {activeProject ? <>
+            <div className="metric-card"><strong>{activeProject.name}</strong><small>/{activeProject.slug} · {activeProject._count.files} source files · {activeProject._count.artifacts} packages</small></div>
+            <form onSubmit={saveProjectSettings} style={{ display: "grid", gap: 10, marginTop: 14 }}>
+              <div className="eyebrow">PROJECT SETTINGS</div>
+              <input aria-label="Project name" required maxLength={80} value={projectName} onChange={(event) => setProjectName(event.target.value)} placeholder="Project name" style={fieldStyle}/>
+              <textarea aria-label="Project description" maxLength={2000} rows={3} value={projectDescription} onChange={(event) => setProjectDescription(event.target.value)} placeholder="Describe this project" style={{ ...fieldStyle, resize: "vertical" }}/>
+              <button className="button button-outline" disabled={busy || !projectName.trim()}><Save size={14}/>Save project settings</button>
+            </form>
+          </> : <p style={{ color: "var(--muted)" }}>Create a project to begin.</p>}
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 22 }}>
             <div className="card-title"><FileText size={16}/><b>Source files</b></div>
