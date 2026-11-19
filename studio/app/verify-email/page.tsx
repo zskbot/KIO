@@ -8,8 +8,12 @@ export default function VerifyEmailPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get("token");
-    if (!token) return;
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (!token) {
+      if (params.get("delivery") === "unavailable") setMessage("Your account was created, but email delivery is not configured yet. Configure the email provider, then request a verification message.");
+      return;
+    }
     let active = true;
     fetch("/api/auth/verification/confirm", {
       method: "POST",
