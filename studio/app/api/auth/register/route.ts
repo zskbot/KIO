@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
 import { createOpaqueToken } from "@/lib/auth-tokens";
 import { sendAuthEmail } from "@/lib/email";
+import { consumeIdentityRateLimit, getClientRateLimitIdentity } from "@/lib/rate-limit";
 
 const schema = z.object({
   name: z.string().trim().min(2).max(80),
@@ -13,10 +14,17 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const parsed = schema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid name, email or password (minimum 10 characters)." }, { status: 400 });
+
+  const { name, email, password } = parsed.data;
   try {
-    const parsed = schema.safeParse(await request.json().catch(() => null));
-    if (!parsed.success) return NextResponse.json({ error: "Invalid name, email or password (minimum 10 characters)." }, { status: 400 });
-    const { name, email, password } = parsed.data;
+    const emailRate = await consumeIdentityRateLimit("register-email", email, 3, 60 * 60 * 1000);
+    const ipRate = await consumeIdentityRateLimit("register-ip", getClientRateLimitIdentity(request), 10, 60 * 60 * 1000);
+    if (!emailRate.allowed || !ipRate.allowed) {
+      return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: { name, email, passwordHash },
