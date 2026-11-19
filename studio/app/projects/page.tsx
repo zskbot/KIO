@@ -117,6 +117,14 @@ export default function ProjectsPage() {
     finally { setBusy(false); }
   }
 
+  function changeProject(projectId: string) {
+    if (tabs.some((tab) => tab.dirty) && !window.confirm("Switch projects and discard unsaved editor changes?")) return;
+    setSelected(projectId);
+    setArtifact(null);
+    setTabs([]);
+    setActiveTabKey("");
+  }
+
   async function saveProjectSettings(event: FormEvent) {
     event.preventDefault();
     if (!selected) return;
@@ -221,7 +229,7 @@ export default function ProjectsPage() {
             <button className="button button-light" disabled={busy}><Plus size={14}/>Create</button>
           </form>
           <label htmlFor="project-select" className="eyebrow">SELECT PROJECT</label>
-          <select id="project-select" value={selected} onChange={e => { setSelected(e.target.value); setArtifact(null); setTabs([]); setActiveTabKey(""); }} style={{ ...fieldStyle, display: "block", width: "100%", margin: "8px 0 20px" }}>
+          <select id="project-select" value={selected} onChange={e => changeProject(e.target.value)} style={{ ...fieldStyle, display: "block", width: "100%", margin: "8px 0 20px" }}>
             <option value="">Choose a project</option>{projects.map(project => <option key={project.id} value={project.id}>{project.name} · {project._count.files} files</option>)}
           </select>
           {activeProject ? <>
