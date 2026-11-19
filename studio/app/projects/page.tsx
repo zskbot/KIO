@@ -69,7 +69,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     if (!selected) return;
     const controllers: AbortController[] = [];
-    const timers = tabs.filter((tab) => !tab.isNew && tab.dirty && tab.path && tab.path === tab.originalPath).map((tab) => {
+    const timers = tabs.filter((tab) => !tab.isNew && tab.dirty && tab.saveState !== "error" && tab.path && tab.path === tab.originalPath).map((tab) => {
       const controller = new AbortController();
       controllers.push(controller);
       return window.setTimeout(async () => {
@@ -80,11 +80,11 @@ export default function ProjectsPage() {
           });
           const data = await response.json();
           if (!response.ok) throw new Error(data.error || "Autosave failed.");
-          setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, dirty: false, saveState: "saved" } : item));
+          setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, dirty: item.content !== tab.content, saveState: item.content === tab.content ? "saved" : "idle" } : item));
           setFiles((current) => current.map((file) => file.path === tab.path ? { ...file, size: data.file.size, updatedAt: data.file.updatedAt } : file));
         } catch (error) {
           if (!controller.signal.aborted) {
-            setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, dirty: false, saveState: "error" } : item));
+            setTabs((current) => current.map((item) => item.key === tab.key ? { ...item, dirty: true, saveState: "error" } : item));
             setNotice(error instanceof Error ? error.message : "Autosave failed.");
           }
         }
@@ -184,7 +184,7 @@ export default function ProjectsPage() {
       if (!response.ok) throw new Error(data.error || "Could not save file.");
       const saved: EditorTab = { ...activeTab, key: data.file.path, path: data.file.path, originalPath: data.file.path, dirty: false, saveState: "saved", isNew: false };
       setTabs((current) => current.map((tab) => tab.key === activeTab.key ? saved : tab));
-      setActiveTabKey(saved.key);
+      setActiveTabKey((current) => current === activeTab.key ? saved.key : current);
       await Promise.all([loadProjects(), loadFiles(selected)]);
       setNotice("Saved " + data.file.path + ".");
     } catch (error) { setNotice(error instanceof Error ? error.message : "File save failed."); }
