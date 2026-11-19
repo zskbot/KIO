@@ -23,16 +23,20 @@ export async function sendAuthEmail(input: {
   const link = new URL(path, origin);
   link.searchParams.set("token", input.token);
   const subject = input.kind === "verify" ? "Verify your KIO.AI email" : "Reset your KIO.AI password";
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      from,
-      to: [input.to],
-      subject,
-      text: `Use this link to ${action}: ${link.toString()}\n\nThis link expires in 30 minutes. If you did not request this, you can ignore this email.`,
-    }),
-    cache: "no-store",
-  });
-  return response.ok;
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from,
+        to: [input.to],
+        subject,
+        text: `Use this link to ${action}: ${link.toString()}\n\nThis link expires in 30 minutes. If you did not request this, you can ignore this email.`,
+      }),
+      cache: "no-store",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
 }
