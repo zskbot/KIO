@@ -63,7 +63,7 @@ export default function ProjectsPage() {
   }, [selected]);
 
   useEffect(() => {
-    if (!selected || !activePath || !isDirty || !path.trim()) return;
+    if (!selected || !activePath || path !== activePath || !isDirty) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       setSaveState("saving");
