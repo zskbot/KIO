@@ -7,7 +7,8 @@ A full-stack Next.js App Router application added alongside the existing static 
 - Email/password registration and login; bcrypt password hashes and signed HTTP-only session cookies.
 - Skill routing for planning, frontend, backend, debugging and documentation.
 - OpenAI-compatible chat completions adapter. Provider keys remain server-side.
-- Health, auth, chat and task API routes.
+- Health, auth, chat, task, project, project-file and package artifact API routes.
+- Full-packer v1: per-user projects, safe text-file storage, ZIP packaging, manifest, SHA-256 checksum and private artifact downloads.
 - Pull-request CI build/typecheck workflow; no deployment job.
 
 ## Local setup
