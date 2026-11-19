@@ -21,3 +21,23 @@
 @media(max-width:1120px){.content-grid{grid-template-columns:minmax(0,1fr) 260px}.main-panel{padding-left:24px;padding-right:24px}.topbar{gap:18px}}
 @media(max-width:850px){.workspace{grid-template-columns:1fr}.sidebar{display:none;position:fixed;z-index:8;top:58px;bottom:0;left:0;width:250px;box-shadow:12px 0 40px #0009}.sidebar.sidebar-open{display:flex}.mobile-toggle{display:grid}.topbar{padding:0 14px;gap:13px}.crumb{display:none}.content-grid{grid-template-columns:1fr}.right-column{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.runtime-card{grid-column:1/-1}.main-panel{padding:27px 16px}.copilot-card{min-height:530px}}
 @media(max-width:560px){.topbar{height:54px}.workspace{min-height:calc(100vh - 54px)}.main-panel{padding:22px 12px 14px}.page-heading{align-items:flex-start;flex-direction:column;margin-bottom:19px}.page-heading h1{font-size:27px}.metrics{grid-template-columns:1fr;gap:8px}.metric-card{padding:12px 14px}.metric-label{margin-bottom:8px}.metric-card strong{font-size:14px}.content-grid{gap:10px}.right-column{grid-template-columns:1fr}.runtime-card{grid-column:auto}.copilot-card{min-height:600px}.chat-body{padding:14px;min-height:450px}.starter-grid{grid-template-columns:1fr}.starter{min-height:75px}.empty-state{padding:14px 0}.empty-state h2{font-size:19px}.composer-wrap{padding:0 12px 12px}.composer-foot{font-size:8px}.footer{flex-wrap:wrap;font-size:8px}.auth-card{padding:25px 20px}.auth-back{top:17px;left:16px}}
+
+
+/* KIO project workspace: responsive source editor */
+.kio-project-grid{grid-template-columns:minmax(0,1.25fr) minmax(260px,.75fr)}
+.kio-file-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kio-source-tabs{scrollbar-width:thin;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.kio-source-tabs [role="tab"]{max-width:min(42vw,240px);overflow:hidden;text-overflow:ellipsis}
+.kio-source-editor{width:100%;min-height:300px;tab-size:2;overflow-wrap:normal;white-space:pre}
+@media(max-width:850px){.kio-project-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){
+  .kio-project-grid .copilot-card{padding:14px!important}
+  .kio-project-grid form[style*="display: flex"]{flex-wrap:wrap}
+  .kio-project-grid form[style*="display: flex"] input{flex-basis:100%}
+  .kio-source-editor{min-height:46vh;font-size:12px!important;resize:vertical}
+  .kio-file-actions{width:100%}
+  .kio-file-actions .button{flex:1;justify-content:center}
+  .kio-source-tabs{margin-left:-2px;margin-right:-2px;padding-bottom:2px}
+  .kio-source-tabs [role="tab"]{max-width:58vw;min-height:40px}
+  .kio-source-tabs button[aria-label^="Close"]{min-width:36px;min-height:40px}
+}
