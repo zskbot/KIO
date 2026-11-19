@@ -95,6 +95,51 @@ export async function POST(request: NextRequest, context: Context) {
   );
 }
 
+export async function PATCH(request: NextRequest, context: Context) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const parsed = z.object({
+    fromPath: z.string().trim().min(1).max(240),
+    toPath: z.string().trim().min(1).max(240),
+  }).strict().safeParse(await request.json().catch(() => null));
+  if (!parsed.success || !validProjectPath(parsed.data.fromPath) || !validProjectPath(parsed.data.toPath)) {
+    return NextResponse.json({ error: "Invalid source or destination path." }, { status: 400 });
+  }
+
+  const { projectId } = await context.params;
+  const project = await ownedProject(projectId, user.id);
+  if (!project) return NextResponse.json({ error: "Project not found." }, { status: 404 });
+
+  const { fromPath, toPath } = parsed.data;
+  const source = await prisma.projectFile.findUnique({
+    where: { projectId_path: { projectId, path: fromPath } },
+    select: { id: true, path: true, size: true, updatedAt: true },
+  });
+  if (!source) return NextResponse.json({ error: "Source file not found." }, { status: 404 });
+  if (fromPath === toPath) return NextResponse.json({ file: source, renamed: false });
+
+  const destination = await prisma.projectFile.findUnique({
+    where: { projectId_path: { projectId, path: toPath } },
+    select: { id: true },
+  });
+  if (destination) return NextResponse.json({ error: "A file already exists at the destination path." }, { status: 409 });
+
+  try {
+    const file = await prisma.projectFile.update({
+      where: { id: source.id },
+      data: { path: toPath },
+      select: { id: true, path: true, size: true, updatedAt: true },
+    });
+    return NextResponse.json({ file, renamed: true });
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "P2002") {
+      return NextResponse.json({ error: "A file already exists at the destination path." }, { status: 409 });
+    }
+    throw error;
+  }
+}
+
 export async function DELETE(request: NextRequest, context: Context) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
