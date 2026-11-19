@@ -41,3 +41,14 @@
   .kio-source-tabs [role="tab"]{max-width:58vw;min-height:40px}
   .kio-source-tabs button[aria-label^="Close"]{min-width:36px;min-height:40px}
 }
+
+
+/* Sandboxed, per-project HTML preview surface */
+.kio-preview-overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:18px;background:#000d}
+.kio-preview-window{display:flex;flex-direction:column;width:min(1200px,100%);height:min(860px,92vh);min-height:0;border:1px solid var(--line);background:#090c10;box-shadow:0 20px 80px #000b}
+.kio-preview-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.kio-preview-header>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.kio-preview-header b{font-size:12px}
+.kio-preview-header small{font-size:9px;color:var(--muted)}
+.kio-preview-frame{display:block;width:100%;flex:1;min-height:0;border:0;background:white}
+@media(max-width:560px){.kio-preview-overlay{padding:0}.kio-preview-window{width:100%;height:100dvh;border:0}.kio-preview-header{padding:10px}.kio-preview-header small{max-width:58vw;line-height:1.4}}
