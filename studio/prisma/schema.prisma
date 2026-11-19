@@ -6,17 +6,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 model User {
-  id                    String                  @id @default(cuid())
-  name                  String
-  email                 String                  @unique
-  passwordHash          String
-  emailVerifiedAt       DateTime?
-  createdAt             DateTime                @default(now())
-  conversations         Conversation[]
-  tasks                 Task[]
-  projects              Project[]
+  id                      String                  @id @default(cuid())
+  name                    String
+  email                   String                  @unique
+  passwordHash            String
+  emailVerifiedAt         DateTime?
+  sessionVersion          Int                     @default(0)
+  createdAt               DateTime                @default(now())
+  conversations           Conversation[]
+  tasks                   Task[]
+  projects                Project[]
   emailVerificationTokens EmailVerificationToken[]
-  passwordResetTokens   PasswordResetToken[]
+  passwordResetTokens     PasswordResetToken[]
 }
 model Conversation {
   id        String    @id @default(cuid())
